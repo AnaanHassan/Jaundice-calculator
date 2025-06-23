@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Neonatal Hyperbilirubinemia Calculator</title>
+    <!-- Files are now loaded from the internet -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#f1f5f9" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
+    <style>
+        :root {
+            --accent-color: #4f46e5; /* Indigo */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            /* This adds padding to the top to avoid the device's status bar/notch */
+            padding-top: env(safe-area-inset-top);
+            transition: background-color 0.3s ease-in-out;
+        }
+        /* Tailwind Dark Mode Configuration */
+        .dark .dark\:bg-slate-900 { background-color: #0f172a !important; }
+        .dark .dark\:bg-slate-800 { background-color: #1e293b !important; }
+        .dark .dark\:text-slate-200 { color: #e2e8f0 !important; }
+        .dark .dark\:text-slate-400 { color: #94a3b8 !important; }
+        .dark .dark\:text-slate-500 { color: #64748b !important; }
+        .dark .dark\:border-slate-700 { border-color: #334155 !important; }
+        .dark .dark\:hover\:bg-slate-700:hover { background-color: #334155 !important; }
+        .dark .dark\:bg-slate-700 { background-color: #334155 !important; }
+        .dark .dark\:bg-indigo-500 { background-color: #6366f1 !important; }
+        .dark .dark\:hover\:bg-indigo-600:hover { background-color: #4f46e5 !important; }
+        .dark .dark\:focus\:ring-indigo-500:focus { --tw-ring-color: #6366f1 !important; }
+        .dark .dark\:peer-checked\:bg-indigo-500:checked { background-color: #6366f1 !important; }
+
+        #risk-modal {
+            transition: opacity 0.25s ease;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200">
+
+<div class="container mx-auto p-4 md:p-8 max-w-7xl">
+    <header class="relative text-center mb-10">
+        <h1 class="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white">Neonatal Jaundice Tool</h1>
+        <p class="text-slate-500 dark:text-slate-400 mt-2">Compare Clinical Practice Guidelines</p>
+        <div class="absolute top-0 right-0">
+            <button id="theme-toggle" class="p-2 rounded-full text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                <svg id="theme-toggle-dark-icon" class="w-6 h-6 hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                <svg id="theme-toggle-light-icon" class="w-6 h-6 hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm-.707 10.607a1 1 0 010-1.414l.707-.707a1 1 0 111.414 1.414l-.707.707a1 1 0 01-1.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707z"></path></svg>
+            </button>
+        </div>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Input and Controls Column -->
+        <div class="lg:col-span-1 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg">
+            <div class="space-y-6">
+                <h2 class="text-xl font-bold text-slate-800 dark:text-slate-100 border-b border-slate-200 dark:border-slate-700 pb-3">Patient Data</h2>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="gestation-weeks" class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Gestation (wks)</label>
+                        <input type="number" id="gestation-weeks" class="w-full bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:text-slate-200" placeholder="e.g., 38">
+                    </div>
+                    <div>
+                        <label for="birth-weight" class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Weight (g)</label>
+                        <input type="number" id="birth-weight" class="w-full bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:text-slate-200" placeholder="e.g., 3100">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="age" class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Postnatal Age</label>
+                    <div class="flex"><input type="number" id="age" class="w-full bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600 rounded-l-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:text-slate-200" placeholder="e.g., 48"><select id="age-unit" class="bg-slate-200 dark:bg-slate-600 dark:text-slate-200 border-slate-300 dark:border-slate-600 rounded-r-lg focus:ring-indigo-500 focus:border-indigo-500"><option value="hours" selected>Hours</option><option value="days">Days</option></select></div>
+                </div>
+
+                <div>
+                    <label for="tsb-level" class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Total Serum Bilirubin (TSB)</label>
+                    <div class="flex"><input type="number" step="0.1" id="tsb-level" class="w-full bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600 rounded-l-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:text-slate-200" placeholder="e.g., 12.5"><select id="tsb-unit" class="bg-slate-200 dark:bg-slate-600 dark:text-slate-200 border-slate-300 dark:border-slate-600 rounded-r-lg focus:ring-indigo-500 focus:border-indigo-500"><option value="mg/dL" selected>mg/dL</option><option value="umol/L">μmol/L</option></select></div>
+                </div>
+
+                <div>
+                    <h3 class="text-base font-semibold text-slate-700 dark:text-slate-300 mb-3">Risk Factors</h3>
+                    <div class="flex items-center justify-between bg-slate-100 dark:bg-slate-700 p-3 rounded-lg">
+                        <label for="risk-factors-present" class="font-medium text-slate-800 dark:text-slate-200 select-none">Risk factors present?</label>
+                        <div class="flex items-center space-x-3">
+                            <button id="info-btn" class="text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </button>
+                            <label for="risk-factors-present" class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="risk-factors-present" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-indigo-500 dark:peer-focus:ring-indigo-400 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 dark:peer-checked:bg-indigo-500"></div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex space-x-3 pt-4">
+                    <button id="calculate-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all transform hover:scale-105">Calculate</button>
+                    <button id="clear-btn" class="w-full bg-slate-500 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all transform hover:scale-105">Clear</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart and Results Column -->
+        <div class="lg:col-span-2 space-y-8">
+            <div id="results-container" class="space-y-6">
+                <div class="text-center p-8 bg-white dark:bg-slate-800 rounded-2xl shadow-lg">
+                    <p class="text-slate-500 dark:text-slate-400">Enter patient data and click "Calculate" to see guideline comparisons.</p>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg">
+                <h2 id="chart-title" class="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4 text-center">Treatment Threshold Chart</h2>
+                <div class="relative h-[300px] md:h-[400px]">
+                    <canvas id="biliChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer class="text-center mt-12 text-sm text-slate-500 dark:text-slate-400"><p><strong>Disclaimer:</strong> This tool is for educational purposes only and is not a substitute for professional clinical judgment. Treatment decisions should be individualized.</p></footer>
+</div>
+
+<!-- Risk Factors Modal -->
+<div id="risk-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-md w-full p-6 m-4" id="modal-content">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100">Risk Factor Definitions</h3>
+            <button id="modal-close-btn" class="text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 text-3xl leading-none">&times;</button>
+        </div>
+        <div class="space-y-4 text-sm">
+            <div>
+                <h4 class="font-semibold text-slate-700 dark:text-slate-300">AAP Guideline (≥35 wks)</h4>
+                <ul class="list-disc list-inside text-slate-600 dark:text-slate-400 mt-1 space-y-1">
+                    <li>Isoimmune hemolytic disease, G6PD deficiency</li>
+                    <li>Sepsis</li>
+                    <li>Significant clinical instability in the previous 24 hours</li>
+                    <li>Serum albumin &lt;3.0 g/dL</li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-semibold text-slate-700 dark:text-slate-300">Preterm Weight-Based Guideline</h4>
+                <p class="text-slate-600 dark:text-slate-400 mt-1">A "sick" neonate is defined by:</p>
+                <ul class="list-disc list-inside text-slate-600 dark:text-slate-400 mt-1 space-y-1">
+                    <li>Rapidly rising TSB levels (>0.5 mg/dL/hr)</li>
+                    <li>Clinical instability, sepsis, or asphyxia</li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-semibold text-slate-700 dark:text-slate-300">NICE Guideline</h4>
+                <ul class="list-disc list-inside text-slate-600 dark:text-slate-400 mt-1">
+                    <li>Does not use a quantitative risk adjustment. Risk should be assessed qualitatively by the clinician.</li>
+                </ul>
+            </div>
+        </div>
+        <button id="modal-ok-btn" class="mt-6 w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700">OK</button>
+    </div>
+</div>
+
+
+<script>
+    const umolPerMg = 17.1;
+    let biliChart;
+    let currentPatientData = {};
+
+    // --- DATA ---
+    const aapHoursAxis = [12, 24, 36, 48, 72, 96, 120];
+    const aapData = {
+        photo_no_risk: { '35':[8.5,10.6,12.3,13.6,15.1,16.8,17.8],'36':[9,11.2,12.9,14.1,15.8,17.5,18.4],'37':[9.6,11.7,13.5,14.8,16.6,18.1,19.2],'38':[10.1,12.3,14.1,15.3,17.1,18.8,20.7],'39':[10.6,12.8,14.7,16,18.1,19.5,20.6],'40':[11.1,13.3,15.3,17,19.8,21.8,21.8],'41':[11.1,13.3,15.3,17,19.8,21.8,21.8],'42':[11.1,13.3,15.3,17,19.8,21.8,21.8]},
+        photo_with_risk: { '35':[6.9,8.9,10.5,11.7,13.2,14.6,15.6],'36':[7.4,9.4,11,12.2,13.8,15.4,16.3],'37':[8,10,11.6,12.7,14.5,16.1,17.1],'38':[8.5,10.5,12.1,13.3,14.9,16.6,18.2],'39':[8.5,10.5,12.1,13.3,14.9,16.6,18.2],'40':[8.5,10.5,12.1,13.3,14.9,16.6,18.2],'41':[8.5,10.5,12.1,13.3,14.9,16.6,18.2],'42':[8.5,10.5,12.1,13.3,14.9,16.6,18.2]},
+        exchange_no_risk: { '35':[16.2,17.9,19.2,20.7,22.9,24.5,24.7],'36':[17.5,19.1,20.5,21.9,24.1,25.5,25.7],'37':[18.7,20.3,21.7,23.1,25.2,26.6,26.8],'38':[19.9,21.4,22.7,24,25.9,27,27],'39':[19.9,21.4,22.7,24,25.9,27,27],'40':[19.9,21.4,22.7,24,25.9,27,27],'41':[19.9,21.4,22.7,24,25.9,27,27],'42':[19.9,21.4,22.7,24,25.9,27,27]},
+        exchange_with_risk: { '35':[14.8,16.1,17.3,18.5,20.1,21.1,21.4],'36':[15.1,16.6,17.8,19.1,20.9,22.1,22.4],'37':[15.6,17.2,18.4,19.7,21.7,23.1,23.3],'38':[16.4,17.7,18.9,20.1,22.1,23.5,23.5],'39':[16.4,17.7,18.9,20.1,22.1,23.5,23.5],'40':[16.4,17.7,18.9,20.1,22.1,23.5,23.5],'41':[16.4,17.7,18.9,20.1,22.1,23.5,23.5],'42':[16.4,17.7,18.9,20.1,22.1,23.5,23.5]}
+    };
+    const niceHoursAxis = [0, 24, 48, 72, 96, 168, 336];
+    const niceThresholdsUmol = {
+        '23':{photo:[40,70,100,130,130,130,130],exchange:[80,130,180,230,230,230,230]},
+        '24':{photo:[40,73.33,106.66,140,140,140,140],exchange:[80,133.33,186.66,240,240,240,240]},
+        '25':{photo:[40,76.66,113.33,150,150,150,150],exchange:[80,136.33,193.33,250,250,250,250]},
+        '26':{photo:[40,80,120,160,160,160,160],exchange:[80,140,200,260,260,260,260]},
+        '27':{photo:[40,83.33,126.66,170,170,170,170],exchange:[80,143.33,206.66,270,270,270,270]},
+        '28':{photo:[40,86.66,133.33,180,180,180,180],exchange:[80,146.66,213.33,280,280,280,280]},
+        '29':{photo:[40,90,140,190,190,190,190],exchange:[80,155,220,290,290,290,290]},
+        '30':{photo:[40,90.33,146.66,200,200,200,200],exchange:[80,153.33,226.66,300,300,300,300]},
+        '31':{photo:[40,96.66,153.33,210,210,210,210],exchange:[80,156.66,233.3,310,310,310,310]},
+        '32':{photo:[40,100,160,220,220,220,220],exchange:[80,160,240,320,320,320,320]},
+        '33':{photo:[40,103.33,166.66,230,230,230,230],exchange:[80,163.33,246.66,330,330,330,330]},
+        '34':{photo:[40,106.66,173.33,240,240,240,240],exchange:[80,166.66,253.33,340,340,340,340]},
+        '35':{photo:[40,110,180,250,250,250,250],exchange:[80,170,260,350,350,350,350]},
+        '36':{photo:[40,113.33,186.66,260,260,260,260],exchange:[80,173.33,266.66,360,360,360,360]},
+        '37':{photo:[40,116.66,193.66,270,270,270,270],exchange:[80,176.66,273.33,370,370,370,370]},
+        '38':{photo:[100,200,250,300,350,350,350],exchange:[100,300,450,450,450,450,450]}
+    };
+    const pretermWeightThresholds = {
+        '<1000': { healthy: { photo: 5, exchange: 10 }, sick: { photo: 4, exchange: 10 } },
+        '1000-1500': { healthy: { photo: 7, exchange: 12 }, sick: { photo: 6, exchange: 12 } },
+        '1501-2000': { healthy: { photo: 10, exchange: 15 }, sick: { photo: 8, exchange: 15 } },
+        '2001-2500': { healthy: { photo: 12, exchange: 18 }, sick: { photo: 10, exchange: 18 } },
+    };
+
+    // --- DOM Elements ---
+    const gestInput = document.getElementById('gestation-weeks');
+    const weightInput = document.getElementById('birth-weight');
+    const ageInput = document.getElementById('age');
+    const ageUnitSelect = document.getElementById('age-unit');
+    const tsbInput = document.getElementById('tsb-level');
+    const tsbUnitSelect = document.getElementById('tsb-unit');
+    const resultsContainer = document.getElementById('results-container');
+    const chartTitle = document.getElementById('chart-title');
+    const riskFactorsToggle = document.getElementById('risk-factors-present');
+
+    // --- Core Functions ---
+    const interpolate = (x, x0, y0, x1, y1) => (x1 === x0) ? y0 : y0 + (x - x0) * (y1 - y0) / (x1 - x0);
+    function getThresholdValue(d, a, h) { const f = a[0], l = a[a.length - 1]; if (h <= f) return d[0]; if (h >= l) return d[d.length - 1]; for (let i = 0; i < a.length - 1; i++) { if (h >= a[i] && h < a[i + 1]) return interpolate(h, a[i], d[i], a[i + 1], d[i + 1]); } return d[d.length - 1]; }
+
+    function calculateAll() {
+        const gestation = parseFloat(gestInput.value);
+        const weight = parseFloat(weightInput.value);
+        const age = parseFloat(ageInput.value);
+        const ageUnit = ageUnitSelect.value;
+        const tsb = parseFloat(tsbInput.value);
+        const tsbUnit = tsbUnitSelect.value;
+
+        if (isNaN(gestation) || isNaN(weight) || isNaN(age) || isNaN(tsb) || age < 0 || tsb < 0 || weight <= 0) {
+            resultsContainer.innerHTML = `<div class="text-center p-8 bg-white dark:bg-slate-800 rounded-2xl shadow-lg"><p class="text-red-600 font-semibold">Please enter all patient data.</p></div>`;
+            if (biliChart) biliChart.destroy();
+            chartTitle.textContent = "Treatment Threshold Chart";
+            return;
+        }
+
+        const ageInHours = ageUnit === 'days' ? age * 24 : age;
+        const tsbInMgDl = tsbUnit === 'umol/L' ? tsb / umolPerMg : tsb;
+
+        currentPatientData = { gestation, weight, ageInHours, tsbInMgDl };
+
+        const hasRiskFactors = riskFactorsToggle.checked;
+
+        resultsContainer.innerHTML = '';
+
+        const aapResult = getAAPResult(gestation, ageInHours, hasRiskFactors);
+        const niceResult = getNICEResult(gestation, ageInHours);
+        const pretermResult = getPretermWeightResult(gestation, weight, hasRiskFactors);
+
+        renderResultCard(aapResult, 'aap');
+        renderResultCard(niceResult, 'nice');
+        renderResultCard(pretermResult, 'preterm');
+
+        let initialChartResult = gestation >= 35 ? aapResult : niceResult;
+        updateChart(initialChartResult.dataForChart, initialChartResult.guidelineName);
+    }
+
+    function getAAPResult(gestation, ageInHours, hasRiskFactors) {
+        let result = { guidelineName: 'AAP (2022)' };
+        if (gestation < 35) {
+            result.error = "Applicable for ≥35 weeks gestation.";
+            return result;
+        }
+        const photoBase = hasRiskFactors ? aapData.photo_with_risk : aapData.photo_no_risk;
+        const exchangeBase = hasRiskFactors ? aapData.exchange_with_risk : aapData.exchange_no_risk;
+
+        const photoThresholdsForGestation = photoBase[Math.floor(gestation)] || photoBase[42];
+        const exchangeThresholdsForGestation = exchangeBase[Math.floor(gestation)] || exchangeBase[42];
+
+        if (!photoThresholdsForGestation) { result.error = "Data not available for this GA."; return result; }
+
+        result.photoThreshold = getThresholdValue(photoThresholdsForGestation, aapHoursAxis, ageInHours);
+        result.exchangeThreshold = getThresholdValue(exchangeThresholdsForGestation, aapHoursAxis, ageInHours);
+        result.dataForChart = { photo: photoThresholdsForGestation, exchange: exchangeThresholdsForGestation, axis: aapHoursAxis };
+        return result;
+    }
+
+    function getNICEResult(gestation, ageInHours) {
+        let result = { guidelineName: 'NICE' };
+        if (gestation < 23) {
+             result.error = "Data not available below 23 weeks.";
+             return result;
+        }
+
+        let niceGestationKey = Math.floor(gestation);
+        if (niceGestationKey > 38) {
+            niceGestationKey = 38;
+        }
+
+        const baseUmol = niceThresholdsUmol[niceGestationKey];
+        if (!baseUmol) {
+            result.error = "Data not available for this GA.";
+            return result;
+        }
+
+        const convertToMgDl = (arr) => arr.map(val => val / umolPerMg);
+        const photoMgDl = convertToMgDl(baseUmol.photo);
+        const exchangeMgDl = convertToMgDl(baseUmol.exchange);
+
+        result.photoThreshold = getThresholdValue(photoMgDl, niceHoursAxis, ageInHours);
+        result.exchangeThreshold = getThresholdValue(exchangeMgDl, niceHoursAxis, ageInHours);
+        result.dataForChart = { photo: photoMgDl, exchange: exchangeMgDl, axis: niceHoursAxis };
+        result.criteria = `Gestation: ${niceGestationKey < 38 ? gestation : '≥38'} wks`;
+        return result;
+    }
+
+    function getPretermWeightResult(gestation, weight, isSick) {
+        let result = { guidelineName: 'Preterm Weight-Based' };
+        if (gestation >= 37) {
+             result.error = "Applicable for preterm infants (<37 wks).";
+             return result;
+        }
+        let key;
+        if (weight < 1000) key = '<1000';
+        else if (weight <= 1500) key = '1000-1500';
+        else if (weight <= 2000) key = '1501-2000';
+        else if (weight <= 2500) key = '2001-2500';
+        else {
+            result.error = "Weight >2500g. Use term guidelines.";
+            return result;
+        }
+
+        const thresholds = pretermWeightThresholds[key];
+        const base = isSick ? thresholds.sick : thresholds.healthy;
+
+        result.photoThreshold = base.photo;
+        result.exchangeThreshold = base.exchange;
+        result.criteria = `Weight: ${key.replace('-', ' - ')}g`;
+        result.dataForChart = null;
+        return result;
+    }
+
+
+    function renderResultCard(result, id) {
+        const card = document.createElement('div');
+
+        let recommendation, statusClass, color;
+        const escalationBuffer = 2.0;
+
+        if (result.error) {
+            statusClass = '';
+        } else {
+             if (currentPatientData.tsbInMgDl >= result.exchangeThreshold) {
+                recommendation = 'Exchange Transfusion Recommended';
+                statusClass = 'status-exchange';
+                color = 'text-red-700 dark:text-red-500';
+            } else if (id !== 'preterm' && currentPatientData.tsbInMgDl >= result.exchangeThreshold - escalationBuffer) {
+                recommendation = 'Escalate Care / Prepare for Exchange';
+                statusClass = 'status-exchange';
+                color = 'text-red-600 dark:text-red-400';
+            } else if (currentPatientData.tsbInMgDl >= result.photoThreshold) {
+                recommendation = 'Phototherapy Indicated';
+                statusClass = 'status-photo';
+                color = 'text-orange-600 dark:text-orange-400';
+            } else if (id === 'aap' && currentPatientData.tsbInMgDl >= result.photoThreshold - escalationBuffer) {
+                 recommendation = 'Consider Phototherapy / Repeat TSB';
+                 statusClass = 'status-photo';
+                 color = 'text-yellow-600 dark:text-yellow-400';
+            }
+            else {
+                recommendation = 'TSB is below phototherapy threshold.';
+                statusClass = 'status-safe';
+                color = 'text-green-700 dark:text-green-400';
+            }
+        }
+        card.className = `result-card ${statusClass}`;
+
+        let content = `<div class="result-card-header"><h3 class="font-bold text-lg text-slate-800 dark:text-slate-100">${result.guidelineName}</h3>`;
+
+        if (result.criteria) {
+            content += `<p class="text-sm text-slate-500 dark:text-slate-400">${result.criteria}</p></div>`;
+        } else {
+            content += `</div>`;
+        }
+
+        content += `<div class="result-card-body">`;
+
+        if (result.error) {
+            content += `<p class="text-slate-600 dark:text-slate-300 font-medium">${result.error}</p>`;
+        } else {
+            content += `<p class="text-xl ${color} font-bold my-2">${recommendation}</p>
+                        <div class="text-xs text-slate-600 dark:text-slate-400 space-y-1 mt-4">
+                            <p>Photo Threshold: <strong>~${result.photoThreshold.toFixed(1)} mg/dL</strong></p>
+                            <p>Exchange Threshold: <strong>~${result.exchangeThreshold.toFixed(1)} mg/dL</strong></p>
+                        </div>`;
+            if(result.dataForChart) {
+               content += `<button onclick="updateChart(currentPatientData.results.${id}.dataForChart, '${result.guidelineName}')" class="mt-4 w-full text-center py-2 px-3 text-sm font-semibold rounded-md bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 transition-colors">View on Chart</button>`;
+            }
+        }
+        content += `</div>`;
+        card.innerHTML = content;
+        resultsContainer.appendChild(card);
+
+        if (!currentPatientData.results) currentPatientData.results = {};
+        currentPatientData.results[id] = result;
+    }
+
+    function updateChart(data, title) {
+        const isDarkMode = document.documentElement.classList.contains('dark');
+        const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+        const textColor = isDarkMode ? '#cbd5e1' : '#64748b';
+
+        if (!data || !data.axis || !data.photo || !data.exchange) {
+             if (biliChart) biliChart.destroy();
+             chartTitle.textContent = "Chart Not Applicable";
+             return;
+        };
+
+        chartTitle.textContent = title + " Chart";
+
+        if (biliChart) biliChart.destroy();
+        biliChart = new Chart('biliChart', {
+            type: 'line',
+            data: {
+                labels: data.axis,
+                datasets: [
+                    { label: 'Exchange Tx', data: data.exchange, borderColor: 'rgba(220, 38, 38, 0.8)', borderWidth: 3, pointRadius: 2, tension: 0.1, borderDash: [5, 5] },
+                    { label: 'Phototherapy', data: data.photo, borderColor: 'rgba(249, 115, 22, 0.8)', borderWidth: 3, pointRadius: 2, tension: 0.1 },
+                    { label: 'Patient TSB', data: [{x: currentPatientData.ageInHours, y: currentPatientData.tsbInMgDl}], borderColor: 'var(--accent-color)', backgroundColor: 'var(--accent-color)', pointRadius: 8, pointHoverRadius: 10, pointStyle: 'circle', showLine: false }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    x: { type: 'linear', title: { display: true, text: 'Postnatal Age (Hours)', font: { size: 14 }, color: textColor }, min: 0, max: Math.max(data.axis[data.axis.length-1], currentPatientData.ageInHours, 120) + 12, grid: { color: gridColor }, ticks: { color: textColor } },
+                    y: { type: 'linear', title: { display: true, text: 'Total Serum Bilirubin (mg/dL)', font: { size: 14 }, color: textColor }, beginAtZero: true, suggestedMax: Math.max(...(data.exchange || []), currentPatientData.tsbInMgDl) + 2, grid: { color: gridColor }, ticks: { color: textColor } }
+                },
+                plugins: { legend: { position: 'top', labels: { usePointStyle: true, color: textColor } } },
+                interaction: { mode: 'index', intersect: false }
+            }
+        });
+    }
+
+    function clearInputs() {
+        gestInput.value = ''; weightInput.value = '';
+        ageInput.value = ''; tsbInput.value = '';
+        riskFactorsToggle.checked = false;
+        resultsContainer.innerHTML = `<div class="text-center p-8 bg-white dark:bg-slate-800 rounded-2xl shadow-lg"><p class="text-slate-500 dark:text-slate-400">Enter patient data and click "Calculate" to see guideline comparisons.</p></div>`;
+        if (biliChart) biliChart.destroy();
+        chartTitle.textContent = "Treatment Threshold Chart";
+    }
+
+    // --- Theme Toggle Logic ---
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    const darkIcon = document.getElementById('theme-toggle-dark-icon');
+    const lightIcon = document.getElementById('theme-toggle-light-icon');
+
+    const applyTheme = (theme) => {
+        if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+            darkIcon.classList.remove('hidden');
+            lightIcon.classList.add('hidden');
+        } else {
+            document.documentElement.classList.remove('dark');
+            darkIcon.classList.add('hidden');
+            lightIcon.classList.remove('hidden');
+        }
+    };
+
+    themeToggleBtn.addEventListener('click', () => {
+        const isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        applyTheme(isDark ? 'dark' : 'light');
+        if (biliChart && currentPatientData.guidelineName) {
+             updateChart(currentPatientData.results[currentPatientData.guidelineName.toLowerCase()].dataForChart, currentPatientData.guidelineName);
+        }
+    });
+
+    // Initialize theme on load
+    const storedTheme = localStorage.getItem('theme');
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    applyTheme(storedTheme || (systemPrefersDark ? 'dark' : 'light'));
+
+    // --- Event Listeners for Modal ---
+    const modal = document.getElementById('risk-modal');
+    document.getElementById('info-btn').addEventListener('click', () => modal.classList.remove('hidden'));
+    document.getElementById('modal-close-btn').addEventListener('click', () => modal.classList.add('hidden'));
+    document.getElementById('modal-ok-btn').addEventListener('click', () => modal.classList.add('hidden'));
+    modal.addEventListener('click', (e) => {
+        if (e.target.id === 'risk-modal') {
+            modal.classList.add('hidden');
+        }
+    });
+
+    // --- Main Event Listeners ---
+    document.getElementById('calculate-btn').addEventListener('click', calculateAll);
+    document.getElementById('clear-btn').addEventListener('click', clearInputs);
+</script>
+</body>
+</html>
